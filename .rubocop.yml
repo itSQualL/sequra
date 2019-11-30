@@ -1,0 +1,7 @@
+# Removes 80 characters line length check.
+Metrics/LineLength:
+  Max: 120
+
+# Removes check: Document classes and non-namespace modules.
+Style/Documentation:
+  Enabled: false
