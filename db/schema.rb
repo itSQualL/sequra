@@ -10,7 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_11_30_102112) do
+ActiveRecord::Schema.define(version: 2019_11_30_123500) do
+
+  create_table "disbursements", force: :cascade do |t|
+    t.integer "merchant_id", null: false
+    t.decimal "amount", default: "0.0", null: false
+    t.integer "week", null: false
+    t.integer "year", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["merchant_id", "year", "week"], name: "index_disbursements_on_merchant_id_and_year_and_week", unique: true
+    t.index ["merchant_id"], name: "index_disbursements_on_merchant_id"
+  end
 
   create_table "merchants", force: :cascade do |t|
     t.string "cif", null: false
@@ -29,6 +40,8 @@ ActiveRecord::Schema.define(version: 2019_11_30_102112) do
     t.datetime "completed_at"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.integer "disbursement_id"
+    t.index ["disbursement_id"], name: "index_orders_on_disbursement_id"
     t.index ["merchant_id"], name: "index_orders_on_merchant_id"
     t.index ["shopper_id"], name: "index_orders_on_shopper_id"
   end

@@ -3,6 +3,7 @@
 class Merchant < ApplicationRecord
   EMAIL_REGEX = /.+@.+\..+/.freeze
 
+  has_many :disbursements, dependent: :destroy
   has_many :orders, dependent: :destroy
 
   validates :cif, presence: true, uniqueness: true
