@@ -3,6 +3,10 @@
 require 'rails_helper'
 
 RSpec.describe Merchant, type: :model do
+  describe 'associations' do
+    it { should have_many(:orders) }
+  end
+
   describe 'validations' do
     subject { described_class.new(cif: 'B611111111', email: 'good@email.com', name: 'test') }
 
