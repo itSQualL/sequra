@@ -64,3 +64,92 @@ ID | MERCHANT ID | SHOPPER ID | AMOUNT | CREATED AT           | COMPLETED AT
 * Your experience level will be taken into consideration when evaluating.
 
 **HAPPY CODING!!**
+
+
+# Solution
+
+## Setup
+
+From `Rails 6.0.1` and having `sqlite3 libsqlite3-dev` libraries execute:
+
+```shell
+bundle install
+bundle exec rails db:setup
+bundle exec rake disbursements:process
+rails s
+```
+It can take a while because of seeds.
+
+After all you will be allow to use the disbursements endpoint: 
+
+```
+curl -X GET -G 'http://localhost:3000/api/v1/disbursements' -d 'merchant_id=2323'
+```
+
+Allowed params:
+* merchant_id :: Integer
+* week :: Integer
+* year :: Integer 
+
+
+## Design
+
+![imagen](https://user-images.githubusercontent.com/15184360/69903207-f97d9300-1396-11ea-9082-79a6a9dc74de.png)
+
+In order to manage disbursements, I created `Disbursement` model.
+
+It contains:
+* merchant_id
+* amount
+* week
+* year
+
+It is also related with orders. In this way, we can get information about all the orders related with a disbursement. Additionaly, we can use it to know from `completed` orders, which of them are already processed (`not_disbursed` scope in `Order` model).
+
+The hearth of this development is in `Disbursement.process` function.
+
+Firstly, it iterates over merchants and try to create or find a new disbursement. In case of create a new one, year and week are set from current date.
+
+In order to avoid edge cases where two processes tried to create a new disbursement, `merchant_id`, `year` and `week` have a unique index and in this case an exception will be thrown and `retry` will be performed (and finally the record will be found).
+
+Once I have the disbursement record, I iterate in batches across orders, filtering by each merchant and returning completed and not disbursed orders.
+
+After that, I use a transaction to calculate and update the disbursement amount and mark all orders as part of this disbursement. This transaction allows us to be sure that an order won't be processed twice (at least in a not distributed database).
+
+To calculate the fees, I've included a method `net_amount` in `Order` model that permit us to know the final disbursement for this orderd. This method is called when I'm iterating in batches in the reduce function to calculate the total sum:
+
+```ruby
+amount = orders.reduce(disbursement.amount) { |current_amount, order| current_amount + order.net_amount }
+```
+
+Also, I decided to use decimal instead of floats type to have more precission since, I don't know how decimals are treated in real cases.
+
+Finally, I created the api endpoint and I used an scope in routes to versioning the api for future changes.
+
+## Improvements
+
+I've spent about 3 - 4 hours in that challenge. But there are so many things to be improved:
+
+### Cache
+
+Since disbursements rarely will change, we could implement a cache at server level to avoid requests overload our application.
+
+### Crontab
+
+As the requirements of the challenge say, we should add the rake task to the crontab to be performed all mondays (or sundays maybe?)
+
+### Log
+
+A system to log the merchants processed would be a nice idea to be able to debug or be sure things are ok in production.
+
+### API auth
+
+As simple as add a token and check it in every API request could be a simple and fast solution.
+
+### Testing
+
+Adding gems like `factory_bot`
+
+### CI
+
+Integrate CI in repository to automate things like rubocop, test coverage checks and tests passing
