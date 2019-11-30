@@ -23,4 +23,23 @@ RSpec.describe Disbursement, type: :model do
 
     it { should validate_uniqueness_of(:week).scoped_to(%i[merchant_id year]) }
   end
+
+  describe '.process' do
+    before do
+      Merchant.destroy_all
+
+      merchant = Merchant.create(cif: 'B511111', email: 'merchant@email.com', name: 'merchant')
+      shopper = Shopper.create(nif: 'B611111111', email: 'good@email.com', name: 'test')
+
+      Order.create(amount: 49, merchant_id: merchant.id, shopper_id: shopper.id, completed_at: Time.now)
+      Order.create(amount: 150, merchant_id: merchant.id, shopper_id: shopper.id, completed_at: Time.now)
+      Order.create(amount: 300, merchant_id: merchant.id, shopper_id: shopper.id, completed_at: Time.now)
+      Order.create(amount: 500, merchant_id: merchant.id, shopper_id: shopper.id)
+    end
+
+    it 'returns correct disbursements' do
+      described_class.process
+      expect(Float(Disbursement.first.amount)).to eq(494.535)
+    end
+  end
 end
